@@ -520,6 +520,12 @@ static void riscv_host_cpu_init(Object *obj)
     set_misa(env, MXL_RV64, 0);
 #endif
     register_cpu_props(obj);
+
+#ifndef CONFIG_USER_ONLY
+    set_satp_mode_max_supported(RISCV_CPU(obj),
+            riscv_cpu_mxl(&RISCV_CPU(obj)->env) == MXL_RV32 ?
+                                    VM_1_10_SV32 : VM_1_10_SV57);
+#endif
 }
 #endif
 
