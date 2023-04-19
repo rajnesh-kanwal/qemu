@@ -841,6 +841,19 @@
             '*kernel-hashes': 'bool' } }
 
 ##
+# @CoveGuestProperties:
+#
+# Properties for CoVE-guest objects.
+#
+# @attributes: CoVE guest's attributes (default: 0)
+#
+# Since: 7.1
+##
+{ 'struct': 'CoveGuestProperties',
+  'data': { '*attributes': 'uint64' } }
+
+
+##
 # @ThreadContextProperties:
 #
 # Properties for thread context objects.
@@ -915,6 +928,7 @@
     { 'name': 'secret_keyring',
       'if': 'CONFIG_SECRET_KEYRING' },
     'sev-guest',
+    'cove-guest',
     'thread-context',
     's390-pv-guest',
     'throttle-group',
@@ -983,6 +997,7 @@
       'secret_keyring':             { 'type': 'SecretKeyringProperties',
                                       'if': 'CONFIG_SECRET_KEYRING' },
       'sev-guest':                  'SevGuestProperties',
+      'cove-guest':                 'CoveGuestProperties',
       'thread-context':             'ThreadContextProperties',
       'throttle-group':             'ThrottleGroupProperties',
       'tls-creds-anon':             'TlsCredsAnonProperties',

@@ -7,6 +7,10 @@ config IBEX
 config RISCV_IOMMU
     bool
 
+config COVE
+    bool
+    Depends on kvm.
+
 # RISC-V machines in alphabetical order
 config MICROCHIP_PFSOC
     bool
@@ -47,6 +51,7 @@ config RISCV_VIRT
     select FW_CFG_DMA
     select PLATFORM_BUS
     select ACPI
+    select COVE
     select RISCV_IOMMU
 
 config SHAKTI_C
