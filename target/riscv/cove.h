@@ -1,6 +1,10 @@
 #ifndef QEMU_RISCV_COVE_H
 #define QEMU_RISCV_COVE_H
 
+#ifndef CONFIG_USER_ONLY
+#include CONFIG_DEVICES /* CONFIG_COVE */
+#endif
+
 #include "exec/confidential-guest-support.h"
 
 #define TYPE_COVE_GUEST "cove-guest"
@@ -15,6 +19,12 @@ typedef struct CoveGuest {
 
     uint64_t attributes;
 } CoveGuest;
+
+#ifdef CONFIG_COVE
+bool is_cove_vm(void);
+#else
+#define is_tdx_vm() 0
+#endif /* CONFIG_COVE */
 
 int cove_kvm_init(MachineState *ms, Error **errp);
 
