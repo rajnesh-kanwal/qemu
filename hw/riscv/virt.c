@@ -31,6 +31,7 @@
 #include "target/riscv/cpu.h"
 #include "hw/core/sysbus-fdt.h"
 #include "target/riscv/pmu.h"
+#include "target/riscv/kvm_riscv.h"
 #include "hw/riscv/riscv_hart.h"
 #include "hw/riscv/riscv_iommu.h"
 #include "hw/riscv/virt.h"
@@ -1747,6 +1748,7 @@ static void virt_machine_class_init(ObjectClass *oc, void *data)
     mc->cpu_index_to_instance_props = riscv_numa_cpu_index_to_props;
     mc->get_default_cpu_node_id = riscv_numa_get_default_cpu_node_id;
     mc->numa_mem_supported = true;
+    mc->kvm_type = kvm_get_vm_type;
     mc->default_ram_id = "riscv_virt_board.ram";
     assert(!mc->get_hotplug_handler);
     mc->get_hotplug_handler = virt_machine_get_hotplug_handler;

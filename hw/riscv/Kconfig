@@ -9,7 +9,6 @@ config RISCV_IOMMU
 
 config COVE
     bool
-    Depends on kvm.
 
 # RISC-V machines in alphabetical order
 config MICROCHIP_PFSOC

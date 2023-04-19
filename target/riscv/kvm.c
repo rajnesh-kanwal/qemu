@@ -42,6 +42,16 @@
 #include "chardev/char-fe.h"
 #include "migration/migration.h"
 #include "sysemu/runstate.h"
+#include "cove.h"
+
+int kvm_get_vm_type(MachineState *ms, const char *vm_type)
+{
+    if (ms->cgs && object_dynamic_cast(OBJECT(ms->cgs), TYPE_COVE_GUEST)) {
+        return KVM_RISCV_COVE_VM;
+    }
+
+    return KVM_RISCV_DEFAULT_VM;
+}
 
 static uint64_t kvm_riscv_reg_id(CPURISCVState *env, uint64_t type,
                                  uint64_t idx)

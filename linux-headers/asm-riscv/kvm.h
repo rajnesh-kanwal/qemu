@@ -64,6 +64,9 @@ struct kvm_riscv_core {
 #define KVM_RISCV_MODE_S	1
 #define KVM_RISCV_MODE_U	0
 
+#define KVM_RISCV_DEFAULT_VM    0
+#define KVM_RISCV_COVE_VM       1
+
 /* CSR registers for KVM_GET_ONE_REG and KVM_SET_ONE_REG */
 struct kvm_riscv_csr {
 	unsigned long sstatus;
