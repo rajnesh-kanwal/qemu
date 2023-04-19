@@ -23,6 +23,11 @@ OBJECT_DEFINE_TYPE_WITH_INTERFACES(CoveGuest,
                                    { TYPE_USER_CREATABLE },
                                    { NULL })
 
+int cove_kvm_init(MachineState *ms, Error **errp)
+{
+    return 0;
+}
+
 static void cove_guest_init(Object *obj)
 {
     CoveGuest *cove = COVE_GUEST(obj);

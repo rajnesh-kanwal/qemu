@@ -24,6 +24,7 @@
 #include "qemu/timer.h"
 #include "qemu/error-report.h"
 #include "qemu/main-loop.h"
+#include "qapi/error.h"
 #include "sysemu/sysemu.h"
 #include "sysemu/kvm.h"
 #include "sysemu/kvm_int.h"
@@ -439,6 +440,16 @@ int kvm_arch_add_msi_route_post(struct kvm_irq_routing_entry *route,
 
 int kvm_arch_init(MachineState *ms, KVMState *s)
 {
+    Error *local_err = NULL;
+
+    if (object_dynamic_cast(OBJECT(ms->cgs), TYPE_COVE_GUEST)) {
+        int ret = cove_kvm_init(ms, &local_err);
+        if (ret < 0) {
+            error_report_err(local_err);
+            return ret;
+        }
+     }
+
     return 0;
 }
 

@@ -16,4 +16,6 @@ typedef struct CoveGuest {
     uint64_t attributes;
 } CoveGuest;
 
+int cove_kvm_init(MachineState *ms, Error **errp);
+
 #endif /* QEMU_RISCV_COVE_H */
