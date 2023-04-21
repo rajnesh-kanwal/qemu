@@ -19,6 +19,8 @@
 #ifndef QEMU_KVM_RISCV_H
 #define QEMU_KVM_RISCV_H
 
+#include "sysemu/kvm.h"
+
 void kvm_riscv_reset_vcpu(RISCVCPU *cpu);
 void kvm_riscv_set_irq(RISCVCPU *cpu, int irq, int level);
 int kvm_get_vm_type(MachineState *ms, const char *vm_type);

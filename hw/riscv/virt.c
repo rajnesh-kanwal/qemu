@@ -29,6 +29,7 @@
 #include "hw/qdev-properties.h"
 #include "hw/char/serial.h"
 #include "target/riscv/cpu.h"
+#include "target/riscv/cove.h"
 #include "hw/core/sysbus-fdt.h"
 #include "target/riscv/pmu.h"
 #include "target/riscv/kvm_riscv.h"
@@ -54,6 +55,9 @@
 #include "hw/display/ramfb.h"
 #include "hw/acpi/aml-build.h"
 #include "qapi/qapi-visit-common.h"
+#include "sysemu/kvm_int.h"
+
+#include <libfdt.h>
 
 /*
  * The virt machine physical address space used by some of the devices
@@ -1309,6 +1313,8 @@ static void virt_machine_done(Notifier *notifier, void *data)
     const char *firmware_name = riscv_default_firmware_name(&s->soc[0]);
     uint32_t fdt_load_addr;
     uint64_t kernel_entry;
+    size_t size;
+    
 
     /*
      * Only direct boot kernel is currently supported for KVM VM,
@@ -1350,7 +1356,11 @@ static void virt_machine_done(Notifier *notifier, void *data)
                                                          firmware_end_addr);
 
         kernel_entry = riscv_load_kernel(machine, &s->soc[0],
-                                         kernel_start_addr, true, NULL);
+                                         kernel_start_addr, true, NULL, &size);
+        kvm_cove_add_blob(kernel_start_addr, size);
+    
+        uint64_t *a = rom_ptr_for_as(&address_space_memory, kernel_start_addr, size);
+        fprintf(stderr, "Addr %p %lx %lx  %lx %lx %lx\n", a, kernel_start_addr, size, a[0], a[1], a[2]);
     } else {
        /*
         * If dynamic firmware is used, it doesn't know where is the next mode
@@ -1371,6 +1381,8 @@ static void virt_machine_done(Notifier *notifier, void *data)
                                            memmap[VIRT_DRAM].size,
                                            machine);
     riscv_load_fdt(fdt_load_addr, machine->fdt);
+
+    kvm_cove_add_blob(fdt_load_addr, fdt_totalsize(machine->fdt));
 
     /* load the reset vector */
     riscv_setup_rom_reset_vec(machine, &s->soc[0], start_addr,

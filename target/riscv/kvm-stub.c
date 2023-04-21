@@ -19,6 +19,17 @@
 #include "cpu.h"
 #include "kvm_riscv.h"
 
+int kvm_get_vm_type(MachineState *ms, const char *vm_type)
+{
+    return 0;
+}
+
+int kvm_cove_measure_region(KVMState *s, unsigned long uaddr,
+                             unsigned long gpa, unsigned long rsize)
+{
+    return 0;
+}
+
 void kvm_riscv_reset_vcpu(RISCVCPU *cpu)
 {
     abort();

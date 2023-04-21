@@ -285,6 +285,27 @@ int kvm_physical_memory_addr_from_host(KVMState *s, void *ram,
     return ret;
 }
 
+int kvm_host_addr_from_physical_memory(KVMState *s, hwaddr gpa,
+                                       void **host_addr)
+{
+    KVMMemoryListener *kml = &s->memory_listener;
+    int i, ret = 0;
+
+    kvm_slots_lock();
+    for (i = 0; i < s->nr_slots; i++) {
+        KVMSlot *mem = &kml->slots[i];
+
+        if (gpa >= mem->start_addr && gpa < mem->start_addr + mem->memory_size) {
+            *host_addr = (void *)((uintptr_t)mem->ram + (gpa - mem->start_addr));
+            ret = 1;
+            break;
+        }
+    }
+    kvm_slots_unlock();
+
+    return ret;
+}
+
 static int kvm_set_user_memory_region(KVMMemoryListener *kml, KVMSlot *slot, bool new)
 {
     KVMState *s = kvm_state;
@@ -1732,21 +1753,23 @@ static MemoryListener kvm_io_listener = {
 
 int kvm_set_irq(KVMState *s, int irq, int level)
 {
-    struct kvm_irq_level event;
-    int ret;
+    //struct kvm_irq_level event;
+    //int ret;
 
-    assert(kvm_async_interrupts_enabled());
+    //assert(kvm_async_interrupts_enabled());
 
-    event.level = level;
-    event.irq = irq;
-    ret = kvm_vm_ioctl(s, s->irq_set_ioctl, &event);
-    if (ret < 0) {
-        perror("kvm_set_irq");
-        abort();
-    }
+    //event.level = level;
+    //event.irq = irq;
+    //ret = kvm_vm_ioctl(s, s->irq_set_ioctl, &event);
+    //if (ret < 0) {
+     //   perror("kvm_set_irq");
+      //  abort();
+    //}
 
-    return (s->irq_set_ioctl == KVM_IRQ_LINE) ? 1 : event.status;
+    //return (s->irq_set_ioctl == KVM_IRQ_LINE) ? 1 : event.status;
+    return 0;
 }
+
 
 #ifdef KVM_CAP_IRQ_ROUTING
 typedef struct KVMMSIRoute {

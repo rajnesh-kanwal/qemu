@@ -47,7 +47,8 @@ target_ulong riscv_load_kernel(MachineState *machine,
                                RISCVHartArrayState *harts,
                                target_ulong firmware_end_addr,
                                bool load_initrd,
-                               symbol_fn_t sym_cb);
+                               symbol_fn_t sym_cb,
+                               size_t *kernel_size);
 uint64_t riscv_compute_fdt_addr(hwaddr dram_start, uint64_t dram_size,
                                 MachineState *ms);
 void riscv_load_fdt(hwaddr fdt_addr, void *fdt);

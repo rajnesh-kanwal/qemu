@@ -48,10 +48,11 @@
 int kvm_get_vm_type(MachineState *ms, const char *vm_type)
 {
     if (ms->cgs && object_dynamic_cast(OBJECT(ms->cgs), TYPE_COVE_GUEST)) {
-        return KVM_RISCV_COVE_VM;
+        fprintf(stderr, "cove type");
+        return KVM_VM_TYPE_RISCV_COVE;
     }
 
-    return KVM_RISCV_DEFAULT_VM;
+    return 0;
 }
 
 static uint64_t kvm_riscv_reg_id(CPURISCVState *env, uint64_t type,
@@ -442,13 +443,11 @@ int kvm_arch_init(MachineState *ms, KVMState *s)
 {
     Error *local_err = NULL;
 
-    if (object_dynamic_cast(OBJECT(ms->cgs), TYPE_COVE_GUEST)) {
-        int ret = cove_kvm_init(ms, &local_err);
-        if (ret < 0) {
-            error_report_err(local_err);
-            return ret;
-        }
-     }
+    int ret = cove_kvm_init(ms, &local_err);
+    if (ret < 0) {
+        error_report_err(local_err);
+        return ret;
+    }
 
     return 0;
 }
@@ -577,7 +576,7 @@ void kvm_riscv_aia_create(DeviceState *aplic_s, bool msimode, int socket,
 {
     int ret;
     int aia_fd = -1;
-    uint64_t aia_mode;
+    uint64_t aia_mode = KVM_DEV_RISCV_AIA_MODE_HWACCEL;
     uint64_t aia_nr_ids;
     uint64_t aia_hart_bits = find_last_bit(&hart_count, BITS_PER_LONG) + 1;
 
@@ -595,19 +594,20 @@ void kvm_riscv_aia_create(DeviceState *aplic_s, bool msimode, int socket,
 
     ret = kvm_device_access(aia_fd, KVM_DEV_RISCV_AIA_GRP_CONFIG,
                             KVM_DEV_RISCV_AIA_CONFIG_MODE,
-                            &aia_mode, false, NULL);
+                            &aia_mode, true, NULL);
 
     ret = kvm_device_access(aia_fd, KVM_DEV_RISCV_AIA_GRP_CONFIG,
                             KVM_DEV_RISCV_AIA_CONFIG_IDS,
                             &aia_nr_ids, false, NULL);
 
-    ret = kvm_device_access(aia_fd, KVM_DEV_RISCV_AIA_GRP_CONFIG,
-                            KVM_DEV_RISCV_AIA_CONFIG_SRCS,
-                            &aia_irq_num, true, NULL);
-    if (ret < 0) {
-        error_report("KVM AIA: fail to set number input irq lines");
-        exit(1);
-    }
+    //aia_irq_num = 0;
+    //ret = kvm_device_access(aia_fd, KVM_DEV_RISCV_AIA_GRP_CONFIG,
+    //                        KVM_DEV_RISCV_AIA_CONFIG_SRCS,
+    //                        &aia_irq_num, true, NULL);
+   // if (ret < 0) {
+     //   error_report("KVM AIA: fail to set number input irq lines");
+       // exit(1);
+    //}
 
     ret = kvm_device_access(aia_fd, KVM_DEV_RISCV_AIA_GRP_CONFIG,
                             KVM_DEV_RISCV_AIA_CONFIG_HART_BITS,
@@ -617,13 +617,13 @@ void kvm_riscv_aia_create(DeviceState *aplic_s, bool msimode, int socket,
         exit(1);
     }
 
-    ret = kvm_device_access(aia_fd, KVM_DEV_RISCV_AIA_GRP_ADDR,
-                            KVM_DEV_RISCV_AIA_ADDR_APLIC,
-                            &aplic_base, true, NULL);
-    if (ret < 0) {
-        error_report("KVM AIA: fail to set the base address of APLIC");
-        exit(1);
-    }
+    //ret = kvm_device_access(aia_fd, KVM_DEV_RISCV_AIA_GRP_ADDR,
+    //                        KVM_DEV_RISCV_AIA_ADDR_APLIC,
+    //                        &aplic_base, true, NULL);
+    //if (ret < 0) {
+      //  error_report("KVM AIA: fail to set the base address of APLIC");
+        //exit(1);
+    //}
 
     for (int i = 0; i < hart_count; i++) {
         uint64_t imsic_addr = imsic_base + i * IMSIC_HART_SIZE(0);

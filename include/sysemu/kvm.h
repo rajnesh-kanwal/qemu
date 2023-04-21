@@ -473,6 +473,8 @@ void kvm_set_sigmask_len(KVMState *s, unsigned int sigmask_len);
 
 int kvm_physical_memory_addr_from_host(KVMState *s, void *ram_addr,
                                        hwaddr *phys_addr);
+int kvm_host_addr_from_physical_memory(KVMState *s, hwaddr gpa, 
+                                       void **host_addr);
 
 #endif /* NEED_CPU_H */
 

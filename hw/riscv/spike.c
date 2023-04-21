@@ -307,7 +307,7 @@ static void spike_board_init(MachineState *machine)
 
         kernel_entry = riscv_load_kernel(machine, &s->soc[0],
                                          kernel_start_addr,
-                                         true, htif_symbol_callback);
+                                         true, htif_symbol_callback, NULL);
     } else {
        /*
         * If dynamic firmware is used, it doesn't know where is the next mode

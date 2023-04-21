@@ -599,7 +599,7 @@ static void sifive_u_machine_init(MachineState *machine)
                                                          firmware_end_addr);
 
         kernel_entry = riscv_load_kernel(machine, &s->soc.u_cpus,
-                                         kernel_start_addr, true, NULL);
+                                         kernel_start_addr, true, NULL, NULL);
     } else {
        /*
         * If dynamic firmware is used, it doesn't know where is the next mode

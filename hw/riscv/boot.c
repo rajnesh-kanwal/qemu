@@ -31,6 +31,7 @@
 #include "sysemu/qtest.h"
 #include "sysemu/kvm.h"
 #include "sysemu/reset.h"
+#include "cove.h"
 
 #include <libfdt.h>
 
@@ -204,6 +205,8 @@ static void riscv_load_initrd(MachineState *machine, uint64_t kernel_entry)
             exit(1);
         }
     }
+    
+    kvm_cove_add_blob(start, size);
 
     /* Some RISC-V machines (e.g. opentitan) don't have a fdt. */
     if (fdt) {
@@ -217,11 +220,14 @@ target_ulong riscv_load_kernel(MachineState *machine,
                                RISCVHartArrayState *harts,
                                target_ulong kernel_start_addr,
                                bool load_initrd,
-                               symbol_fn_t sym_cb)
+                               symbol_fn_t sym_cb,
+                               size_t *kernel_size)
 {
     const char *kernel_filename = machine->kernel_filename;
     uint64_t kernel_load_base, kernel_entry;
     void *fdt = machine->fdt;
+    uint64_t kernel_load_end;
+    int ret;
 
     g_assert(kernel_filename != NULL);
 
@@ -233,19 +239,27 @@ target_ulong riscv_load_kernel(MachineState *machine,
      * separate SBI and ELF entry points (used by FreeBSD, for example).
      */
     if (load_elf_ram_sym(kernel_filename, NULL, NULL, NULL,
-                         NULL, &kernel_load_base, NULL, NULL, 0,
+                         NULL, &kernel_load_base, &kernel_load_end, NULL, 0,
                          EM_RISCV, 1, 0, NULL, true, sym_cb) > 0) {
+        if (kernel_size)
+            *kernel_size = kernel_load_end - kernel_load_base;
         kernel_entry = kernel_load_base;
         goto out;
     }
 
-    if (load_uimage_as(kernel_filename, &kernel_entry, NULL, NULL,
-                       NULL, NULL, NULL) > 0) {
+    ret = load_uimage_as(kernel_filename, &kernel_entry, NULL, NULL,
+                                  NULL, NULL, NULL);
+    if (ret > 0) {
+        if (kernel_size)
+            *kernel_size = ret;
         goto out;
     }
 
-    if (load_image_targphys_as(kernel_filename, kernel_start_addr,
-                               current_machine->ram_size, NULL) > 0) {
+    ret = load_image_targphys_as(kernel_filename, kernel_start_addr,
+                                          current_machine->ram_size, NULL);
+    if (ret> 0) {
+        if (kernel_size)
+            *kernel_size = ret;
         kernel_entry = kernel_start_addr;
         goto out;
     }

@@ -514,6 +514,8 @@ static void rv32_imafcu_nommu_cpu_init(Object *obj)
 static void riscv_host_cpu_init(Object *obj)
 {
     CPURISCVState *env = &RISCV_CPU(obj)->env;
+    RISCVCPU *cpu = RISCV_CPU(obj);
+
 #if defined(TARGET_RISCV32)
     set_misa(env, MXL_RV32, 0);
 #elif defined(TARGET_RISCV64)
@@ -521,8 +523,12 @@ static void riscv_host_cpu_init(Object *obj)
 #endif
     register_cpu_props(obj);
 
+    set_priv_version(env, PRIV_VERSION_1_12_0);
+    
+    cpu->cfg.ext_icbom = false;
+
 #ifndef CONFIG_USER_ONLY
-    set_satp_mode_max_supported(RISCV_CPU(obj),
+    set_satp_mode_max_supported(cpu,
             riscv_cpu_mxl(&RISCV_CPU(obj)->env) == MXL_RV32 ?
                                     VM_1_10_SV32 : VM_1_10_SV57);
 #endif

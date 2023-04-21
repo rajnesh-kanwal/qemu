@@ -27,5 +27,6 @@ bool is_cove_vm(void);
 #endif /* CONFIG_COVE */
 
 int cove_kvm_init(MachineState *ms, Error **errp);
+void kvm_cove_add_blob(hwaddr base, size_t size);
 
 #endif /* QEMU_RISCV_COVE_H */
