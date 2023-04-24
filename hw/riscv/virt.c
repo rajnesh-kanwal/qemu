@@ -570,8 +570,6 @@ static void create_fdt_imsic(RISCVVirtState *s, const MemMapEntry *memmap,
                 riscv_socket_count(ms) * sizeof(uint32_t) * 4);
         qemu_fdt_setprop_cell(ms->fdt, imsic_name, "riscv,num-ids",
                 VIRT_IRQCHIP_NUM_MSIS);
-        qemu_fdt_setprop_cells(ms->fdt, imsic_name, "riscv,ipi-id",
-                VIRT_IRQCHIP_IPI_MSI);
         if (riscv_socket_count(ms) > 1) {
             qemu_fdt_setprop_cell(ms->fdt, imsic_name, "riscv,hart-index-bits",
                     imsic_num_bits(imsic_max_hart_per_socket));
@@ -691,7 +689,7 @@ static void create_fdt_socket_aplic(RISCVVirtState *s,
                 aplic_s_phandle);
         qemu_fdt_setprop_cells(ms->fdt, aplic_name, "riscv,delegate",
                 aplic_s_phandle, 0x1, VIRT_IRQCHIP_NUM_SOURCES);
-        riscv_socket_fdt_write_id(ms, ms->fdt, aplic_name, socket);
+        riscv_socket_fdt_write_id(ms, aplic_name, socket);
         qemu_fdt_setprop_cell(ms->fdt, aplic_name, "phandle", aplic_m_phandle);
         g_free(aplic_name);
     }
