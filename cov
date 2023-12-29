@@ -1,46 +1,45 @@
-This patch series adds the support for RISC-V ISA extension smcntrpmf (cycle and
-privilege mode filtering) [1]. It is based on Kevin's earlier work but improves
-it by actually implement privilege mode filtering by tracking the privilege
-mode switches. This enables the privilege mode filtering for mhpmcounters as
-well. However, Smcntrpmf/Sscofpmf must be enabled to leverage this. This series
-also modified to report the raw instruction count instead of virtual cpu time
-based on the instruction count when icount is enabled. The former seems to be
-the preferred approach for instruction count for other architectures as well.
+This series adds the counter delegation extension support. The counter
+delegation ISA extension(Smcdeleg/Ssccfg) actually depends on multiple ISA
+extensions.
 
-Please let me know if anybody thinks that's incorrect.
+1. S[m|s]csrind : The indirect CSR extension[1] which defines additional
+   5 ([M|S|VS]IREG2-[M|S|VS]IREG6) register to address size limitation of
+   RISC-V CSR address space.
+2. Smstateen: The stateen bit[60] controls the access to the registers
+   indirectly via the above indirect registers.
+3. Smcdeleg/Ssccfg: The counter delegation extensions[2]
 
-The series is also available at [2]
+The counter delegation extension allows Supervisor mode to program the
+hpmevent and hpmcounters directly without needing the assistance from the
+M-mode via SBI calls. This results in a faster perf profiling and very
+few traps. This extension also introduces a scountinhibit CSR which allows
+to stop/start any counter directly from the S-mode. As the counter
+delegation extension potentially can have more than 100 CSRs, the specificaiton
+leverages the indirect CSR extension to save the precious CSR address range.
 
-Changes from v5->v6:
-1. Rebased on top of alister/riscv-to-apply.next (c50aabe132).
-2. Fixed a bug in pmf logic related to VS<->HS transition and same mode
-   recording.
-3. Merged assorted fixes PR as the changes are intertwined. [2]
-4. Fix counter inhibit CSR behavior. This change now start counters from both
-   mhpmcounter and mcountinhibit writes. Previously cycle/inst timer was
-   only started on mhpmcounterx write.
+Due to the dependancy of these extensions, the following extensions must be
+enabled to use the counter delegation feature in S-mode.
 
-Changes from v4->v5:
-1. Rebased on top of master(158a054c4d1a).
-2. Fixed a bug for VS<->HS transition.
+"smstateen=true,sscofpmf=true,ssccfg=true,smcdeleg=true,smcsrind=true,sscsrind=true"
 
-Changes from v3->v4:
-1. Fixed the ordering of the ISA extension names in isa_edata_arr.
-2. Added RB tags.
+This makes the qemu command line quite tedious. In stead of that, I think we
+can enable these features by default if there is no objection.
 
-Changes from v2->v3:
-1. Fixed the rebasing error in PATCH2.
-2. Added RB tags.
-3. Addressed other review comments.
+The first 2 patches decouple the indirect CSR usage from AIA implementation
+while patch3 adds stateen bits validation for AIA.
+The PATCH4 implements indirect CSR extensions while remaining patches
+implement the counter delegation extensions.
 
-Changes from v1->v2:
-1. Implemented actual mode filtering for both icount and host ticks mode.
-1. Addressed comments in v1.
-2. Added Kevin's personal email address.
+The Qemu patches can be found here:
+https://github.com/atishp04/qemu/tree/counter_delegation_rfc
 
-[1] https://github.com/riscv/riscv-smcntrpmf
-[2] https://github.com/atishp04/qemu/tree/smcntrpmf_v6
-[3] https://lore.kernel.org/all/20240429-countinhibit_fix-v1-0-802ec1e99133@rivosinc.com/
+The Linux kernel patches can be found here:
 
-option-subject target/riscv: Add ISA extension smcntrpmf support
-option-prefix PATCH v6
+The opensbi patch can be found here:
+
+
+[1] https://github.com/riscv/riscv-indirect-csr-access
+[2] https://github.com/riscv/riscv-smcdeleg-ssccfg
+
+option-subject Add Counter delegation ISA extension support 
+option-prefix PATCH RFC
