@@ -1,0 +1,46 @@
+This patch series adds the support for RISC-V ISA extension smcntrpmf (cycle and
+privilege mode filtering) [1]. It is based on Kevin's earlier work but improves
+it by actually implement privilege mode filtering by tracking the privilege
+mode switches. This enables the privilege mode filtering for mhpmcounters as
+well. However, Smcntrpmf/Sscofpmf must be enabled to leverage this. This series
+also modified to report the raw instruction count instead of virtual cpu time
+based on the instruction count when icount is enabled. The former seems to be
+the preferred approach for instruction count for other architectures as well.
+
+Please let me know if anybody thinks that's incorrect.
+
+The series is also available at [2]
+
+Changes from v5->v6:
+1. Rebased on top of alister/riscv-to-apply.next (c50aabe132).
+2. Fixed a bug in pmf logic related to VS<->HS transition and same mode
+   recording.
+3. Merged assorted fixes PR as the changes are intertwined. [2]
+4. Fix counter inhibit CSR behavior. This change now start counters from both
+   mhpmcounter and mcountinhibit writes. Previously cycle/inst timer was
+   only started on mhpmcounterx write.
+
+Changes from v4->v5:
+1. Rebased on top of master(158a054c4d1a).
+2. Fixed a bug for VS<->HS transition.
+
+Changes from v3->v4:
+1. Fixed the ordering of the ISA extension names in isa_edata_arr.
+2. Added RB tags.
+
+Changes from v2->v3:
+1. Fixed the rebasing error in PATCH2.
+2. Added RB tags.
+3. Addressed other review comments.
+
+Changes from v1->v2:
+1. Implemented actual mode filtering for both icount and host ticks mode.
+1. Addressed comments in v1.
+2. Added Kevin's personal email address.
+
+[1] https://github.com/riscv/riscv-smcntrpmf
+[2] https://github.com/atishp04/qemu/tree/smcntrpmf_v6
+[3] https://lore.kernel.org/all/20240429-countinhibit_fix-v1-0-802ec1e99133@rivosinc.com/
+
+option-subject target/riscv: Add ISA extension smcntrpmf support
+option-prefix PATCH v6
