@@ -681,6 +681,17 @@ uint64_t riscv_cpu_update_mip(CPURISCVState *env, uint64_t mask, uint64_t value)
 {
     uint64_t old = env->mip;
 
+    /*
+     * For a 32bit system, if AIA is not supported then limit the mip to 32-bits
+     * as miph is not present. Given `riscv_cpu_update_mip()` is called from
+     * multiple places, adding this assert here to avoid the mess everywhere
+     * else.
+     */
+#if defined(TARGET_RISCV32)
+    g_assert(riscv_cpu_cfg(env)->ext_smaia ||
+             !(mask & value & 0xFFFFFFFF00000000ULL));
+#endif
+
     /* No need to update mip for VSTIP */
     mask = ((mask == MIP_VSTIP) && env->vstime_irq) ? 0 : mask;
 
