@@ -143,13 +143,15 @@ FIELD(VTYPE, VEDIV, 8, 2)
 FIELD(VTYPE, RESERVED, 10, sizeof(target_ulong) * 8 - 11)
 
 typedef struct PMUCTRState {
-    /* Current value of a counter */
+    /* Software written value of a counter */
     target_ulong mhpmcounter_val;
-    /* Current value of a counter in RV32 */
+    /* Software written value of a counter in RV32 */
     target_ulong mhpmcounterh_val;
-    /* Snapshot values of counter */
+    /* Snapshot values of the counter while starting/updating the counter.
+     * In case of cycle or instret this holds host timer snapshot value.
+     */
     target_ulong mhpmcounter_prev;
-    /* Snapshort value of a counter in RV32 */
+    /* Snapshort value of the counter in RV32 */
     target_ulong mhpmcounterh_prev;
     /* Value beyond UINT32_MAX/UINT64_MAX before overflow interrupt trigger */
     target_ulong irq_overflow_left;
