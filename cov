@@ -1,0 +1,25 @@
+This series contains few miscellaneous fixes related to Virtual IRQs
+and related code. The first patch changes CSR mask widths to 64bit
+as AIA introduces half CSRs in case of 32bit systems.
+
+Second patch fixes guest and core local IRQ overlap. Qemu creates
+a single IRQ range which is shared between core local interrupts
+and guests in riscv_cpu_init(). Even though, in the current state
+there is no device generating interrupts in the 13:63 range, and
+virtual IRQ logic in Qemu also doesn't go through riscv_cpu_set_irq()
+path, it's better to keep local and guest range separate to avoid
+confusion and any future issues.
+
+Patches can be found here on github [0].
+
+Changes from v1->v2:
+1. Check patch fixes.
+2. Removed commit title split from Fixes tags.
+
+v1 link [1].
+
+[0] https://github.com/rajnesh-kanwal/qemu/tree/dev/rkanwal/irq_fixes
+[1] https://lore.kernel.org/all/20240513114602.72098-1-rkanwal@rivosinc.com/
+
+option-subject target/riscv: Minor fixes and improvements for Virtual IRQs
+option-prefix PATCH v2
