@@ -461,6 +461,11 @@ void helper_ctr_branch(CPURISCVState *env, target_ulong src, target_ulong dest,
     }
 }
 
+void helper_ctr_clear(CPURISCVState *env)
+{
+    riscv_ctr_clear(env);
+}
+
 void helper_wfi(CPURISCVState *env)
 {
     CPUState *cs = env_cpu(env);
