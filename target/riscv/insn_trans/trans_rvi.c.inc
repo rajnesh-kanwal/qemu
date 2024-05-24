@@ -55,6 +55,11 @@ static bool trans_jalr(DisasContext *ctx, arg_jalr *a)
     TCGLabel *misaligned = NULL;
     TCGv target_pc = tcg_temp_new();
     TCGv succ_pc = dest_gpr(ctx, a->rd);
+#ifndef CONFIG_USER_ONLY
+    TCGv rd = tcg_constant_tl(a->rd);
+    TCGv rs1 = tcg_constant_tl(a->rs1);
+    TCGv src = tcg_constant_tl(ctx->base.pc_next);
+#endif
 
     tcg_gen_addi_tl(target_pc, get_gpr(ctx, a->rs1, EXT_NONE), a->imm);
     tcg_gen_andi_tl(target_pc, target_pc, (target_ulong)-2);
@@ -75,6 +80,9 @@ static bool trans_jalr(DisasContext *ctx, arg_jalr *a)
     gen_set_gpr(ctx, a->rd, succ_pc);
 
     tcg_gen_mov_tl(cpu_pc, target_pc);
+#ifndef CONFIG_USER_ONLY
+    gen_helper_ctr_jalr(tcg_env, src, cpu_pc, rd, rs1);
+#endif
     lookup_and_goto_ptr(ctx);
 
     if (misaligned) {
@@ -164,6 +172,11 @@ static bool gen_branch(DisasContext *ctx, arg_b *a, TCGCond cond)
     TCGv src1 = get_gpr(ctx, a->rs1, EXT_SIGN);
     TCGv src2 = get_gpr(ctx, a->rs2, EXT_SIGN);
     target_ulong orig_pc_save = ctx->pc_save;
+#ifndef CONFIG_USER_ONLY
+    TCGv src = tcg_constant_tl(ctx->base.pc_next);
+    TCGv taken;
+    TCGv dest;
+#endif
 
     if (get_xl(ctx) == MXL_RV128) {
         TCGv src1h = get_gprh(ctx, a->rs1);
@@ -176,6 +189,14 @@ static bool gen_branch(DisasContext *ctx, arg_b *a, TCGCond cond)
     } else {
         tcg_gen_brcond_tl(cond, src1, src2, l);
     }
+
+#ifndef CONFIG_USER_ONLY
+    dest = tcg_constant_tl(ctx->base.pc_next + ctx->cur_insn_len);
+    taken = tcg_constant_tl(0);
+
+    gen_helper_ctr_branch(tcg_env, src, dest, taken);
+#endif
+
     gen_goto_tb(ctx, 1, ctx->cur_insn_len);
     ctx->pc_save = orig_pc_save;
 
@@ -188,6 +209,12 @@ static bool gen_branch(DisasContext *ctx, arg_b *a, TCGCond cond)
         gen_pc_plus_diff(target_pc, ctx, a->imm);
         gen_exception_inst_addr_mis(ctx, target_pc);
     } else {
+#ifndef CONFIG_USER_ONLY
+        dest = tcg_constant_tl(ctx->base.pc_next + a->imm);
+        taken = tcg_constant_tl(1);
+
+        gen_helper_ctr_branch(tcg_env, src, dest, taken);
+#endif
         gen_goto_tb(ctx, 0, a->imm);
     }
     ctx->pc_save = -1;
