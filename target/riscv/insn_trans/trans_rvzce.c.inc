@@ -204,6 +204,12 @@ static bool gen_pop(DisasContext *ctx, arg_cmpp *a, bool ret, bool ret_val)
     if (ret) {
         TCGv ret_addr = get_gpr(ctx, xRA, EXT_SIGN);
         tcg_gen_mov_tl(cpu_pc, ret_addr);
+#ifndef CONFIG_USER_ONLY
+        if (ctx->cfg_ptr->ext_smctr || ctx->cfg_ptr->ext_ssctr) {
+            TCGv src = tcg_constant_tl(ctx->base.pc_next);
+            gen_helper_ctr_popret(tcg_env, src, cpu_pc);
+        }
+#endif
         tcg_gen_lookup_and_goto_ptr();
         ctx->base.is_jmp = DISAS_NORETURN;
     }
@@ -308,6 +314,20 @@ static bool trans_cm_jalt(DisasContext *ctx, arg_cm_jalt *a)
         gen_pc_plus_diff(succ_pc, ctx, ctx->cur_insn_len);
         gen_set_gpr(ctx, xRA, succ_pc);
     }
+
+#ifndef CONFIG_USER_ONLY
+    if (ctx->cfg_ptr->ext_smctr || ctx->cfg_ptr->ext_ssctr) {
+        /*
+         * We are reusing helper_ctr_jal() here. If rd is x1 or x5,
+         * this will record a direct call (cm.jalt) and if it's x0
+         * then this will record a direct jump (cm.jt).
+         */
+        TCGv rd = tcg_constant_tl(a->index >= 32 ? 1 : 0);
+        TCGv src = tcg_constant_tl(ctx->base.pc_next);
+        gen_helper_ctr_jal(tcg_env, src, addr, rd);
+    }
+#endif
+
 
     tcg_gen_mov_tl(cpu_pc, addr);
 
