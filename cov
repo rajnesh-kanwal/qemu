@@ -1,45 +1,61 @@
-This series adds the counter delegation extension support. The counter
-delegation ISA extension(Smcdeleg/Ssccfg) actually depends on multiple ISA
-extensions.
+target/riscv: Add support for Control Transfer Records Ext.
 
-1. S[m|s]csrind : The indirect CSR extension[1] which defines additional
-   5 ([M|S|VS]IREG2-[M|S|VS]IREG6) register to address size limitation of
-   RISC-V CSR address space.
-2. Smstateen: The stateen bit[60] controls the access to the registers
-   indirectly via the above indirect registers.
-3. Smcdeleg/Ssccfg: The counter delegation extensions[2]
+This series enables Control Transfer Records extension support on riscv
+platform. This extension is similar to Arch LBR in x86 and BRBE in ARM.
+The Extension has been stable and the latest release can be found here [0]
 
-The counter delegation extension allows Supervisor mode to program the
-hpmevent and hpmcounters directly without needing the assistance from the
-M-mode via SBI calls. This results in a faster perf profiling and very
-few traps. This extension also introduces a scountinhibit CSR which allows
-to stop/start any counter directly from the S-mode. As the counter
-delegation extension potentially can have more than 100 CSRs, the specificaiton
-leverages the indirect CSR extension to save the precious CSR address range.
+CTR extension depends on couple of other extensions:
 
-Due to the dependancy of these extensions, the following extensions must be
-enabled to use the counter delegation feature in S-mode.
+1. S[m|s]csrind : The indirect CSR extension [1] which defines additional
+   ([M|S|VS]IREG2-[M|S|VS]IREG6) register to address size limitation of
+   RISC-V CSR address space. CTR access ctrsource, ctrtartget and ctrdata
+   CSRs using sscsrind extension.
 
-"smstateen=true,sscofpmf=true,ssccfg=true,smcdeleg=true,smcsrind=true,sscsrind=true"
+2. Smstateen: The mstateen bit[54] controls the access to the CTR ext to
+   S-mode.
 
-This makes the qemu command line quite tedious. In stead of that, I think we
-can enable these features by default if there is no objection.
+3. Sscofpmf: Counter overflow and privilege mode filtering. [2]
 
-The first 2 patches decouple the indirect CSR usage from AIA implementation
-while patch3 adds stateen bits validation for AIA.
-The PATCH4 implements indirect CSR extensions while remaining patches
-implement the counter delegation extensions.
+The series is based on Smcdeleg/Ssccfg counter delegation extension [3]
+patches. CTR itself doesn't depend on counter delegation support. This
+rebase is basically to include the Smcsrind patches.
+
+Due to the dependency of these extensions, the following extensions must be
+enabled to use the control transfer records feature.
+
+"smstateen=true,sscofpmf=true,smcsrind=true,sscsrind=true,smctr=true,ssctr=true"
+
+Here is the link to a quick guide [5] to setup and run a basic perf demo on
+Linux to use CTR Ext.
 
 The Qemu patches can be found here:
-https://github.com/atishp04/qemu/tree/counter_delegation_rfc
-
-The Linux kernel patches can be found here:
+https://github.com/rajnesh-kanwal/qemu/tree/ctr_upstream_v2
 
 The opensbi patch can be found here:
+https://github.com/rajnesh-kanwal/opensbi/tree/ctr_upstream_v2
 
+The Linux kernel patches can be found here:
+https://github.com/rajnesh-kanwal/linux/tree/ctr_upstream_v2
 
-[1] https://github.com/riscv/riscv-indirect-csr-access
-[2] https://github.com/riscv/riscv-smcdeleg-ssccfg
+[0]: https://github.com/riscv/riscv-control-transfer-records/release
+[1]: https://github.com/riscv/riscv-indirect-csr-access
+[2]: https://github.com/riscvarchive/riscv-count-overflow/tree/main
+[3]: https://github.com/riscv/riscv-smcdeleg-ssccfg
+[4]: https://lore.kernel.org/all/20240217000134.3634191-1-atishp@rivosinc.com/
+[5]: https://github.com/rajnesh-kanwal/linux/wiki/Running-CTR-basic-demo-on-QEMU-RISC%E2%80%90V-Virt-machine
 
-option-subject Add Counter delegation ISA extension support 
-option-prefix PATCH RFC
+Changelog:
+
+v2: Lots of improvements based on Jason Chien's feedback including:
+  - Added CTR recording for cm.jalt, cm.jt, cm.popret, cm.popretz.
+  - Fixed and added more CTR extension enable checks.
+  - Fixed CTR CSR predicate functions.
+  - Fixed external trap xTE bit checks.
+  - One fix in freeze function for VS-mode.
+  - Lots of minor code improvements.
+  - Added checks in sctrclr instruction helper.
+
+v1:
+  - https://github.com/rajnesh-kanwal/qemu/tree/ctr_upstream
+
+git send-email   -6 --annotate   --cover-letter --to qemu-riscv@nongnu.org,qemu-devel@nongnu.org --cc alistair.francis@wdc.com,bin.meng@windriver.com,liweiwei@iscas.ac.cn,dbarboza@ventanamicro.com,zhiwei_liu@linux.alibaba.com,atishp@rivosinc.com,apatel@ventanamicro.com,rkanwal@rivosinc.com,beeman@rivosinc.com,tech-control-transfer-records@lists.riscv.org
