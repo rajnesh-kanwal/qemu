@@ -40,7 +40,7 @@
 static GHashTable *multi_ext_user_opts;
 static GHashTable *misa_ext_user_opts;
 
-static GHashTable *multi_ext_implied_rules;
+static GHashTable *multi_ext_enabling_rules;
 static GHashTable *misa_ext_implied_rules;
 
 static bool cpu_cfg_ext_is_user_set(uint32_t ext_offset)
@@ -730,7 +730,7 @@ static void riscv_cpu_validate_profiles(RISCVCPU *cpu)
     }
 }
 
-static void riscv_cpu_init_implied_exts_rules(void)
+static void riscv_cpu_init_ext_rules(void)
 {
     RISCVCPUImpliedExtsRule *rule;
 #ifndef CONFIG_USER_ONLY
@@ -756,14 +756,14 @@ static void riscv_cpu_init_implied_exts_rules(void)
 #ifndef CONFIG_USER_ONLY
         rule->enabled = bitmap_new(ms->smp.cpus);
 #endif
-        g_hash_table_insert(multi_ext_implied_rules,
+        g_hash_table_insert(multi_ext_enabling_rules,
                             GUINT_TO_POINTER(rule->ext), (gpointer)rule);
     }
 
     initialized = true;
 }
 
-static void cpu_enable_implied_rule(RISCVCPU *cpu,
+static void cpu_enable_ext_rule(RISCVCPU *cpu,
                                     RISCVCPUImpliedExtsRule *rule)
 {
     CPURISCVState *env = &cpu->env;
@@ -787,7 +787,7 @@ static void cpu_enable_implied_rule(RISCVCPU *cpu,
                                              GUINT_TO_POINTER(misa_bits[i]));
 
                     if (ir) {
-                        cpu_enable_implied_rule(cpu, ir);
+                        cpu_enable_ext_rule(cpu, ir);
                     }
                 }
             }
@@ -798,12 +798,12 @@ static void cpu_enable_implied_rule(RISCVCPU *cpu,
              rule->implied_multi_exts[i] != RISCV_IMPLIED_EXTS_RULE_END; i++) {
             cpu_cfg_ext_auto_update(cpu, rule->implied_multi_exts[i], true);
 
-            ir = g_hash_table_lookup(multi_ext_implied_rules,
-                                     GUINT_TO_POINTER(
-                                         rule->implied_multi_exts[i]));
+                ir = g_hash_table_lookup(multi_ext_enabling_rules,
+                                        GUINT_TO_POINTER(
+                                            rule->implied_multi_exts[i]));
 
             if (ir) {
-                cpu_enable_implied_rule(cpu, ir);
+                cpu_enable_ext_rule(cpu, ir);
             }
         }
 
@@ -844,7 +844,7 @@ static void cpu_enable_zc_implied_rules(RISCVCPU *cpu)
     }
 }
 
-static void riscv_cpu_enable_implied_rules(RISCVCPU *cpu)
+static void riscv_cpu_enable_ext_rules(RISCVCPU *cpu)
 {
     RISCVCPUImpliedExtsRule *rule;
     int i;
@@ -855,14 +855,14 @@ static void riscv_cpu_enable_implied_rules(RISCVCPU *cpu)
     /* Enable the implied MISAs. */
     for (i = 0; (rule = riscv_misa_ext_implied_rules[i]); i++) {
         if (riscv_has_ext(&cpu->env, rule->ext)) {
-            cpu_enable_implied_rule(cpu, rule);
+            cpu_enable_ext_rule(cpu, rule);
         }
     }
 
     /* Enable the implied extensions. */
     for (i = 0; (rule = riscv_multi_ext_implied_rules[i]); i++) {
         if (isa_ext_is_enabled(cpu, rule->ext)) {
-            cpu_enable_implied_rule(cpu, rule);
+            cpu_enable_ext_rule(cpu, rule);
         }
     }
 }
@@ -872,8 +872,8 @@ void riscv_tcg_cpu_finalize_features(RISCVCPU *cpu, Error **errp)
     CPURISCVState *env = &cpu->env;
     Error *local_err = NULL;
 
-    riscv_cpu_init_implied_exts_rules();
-    riscv_cpu_enable_implied_rules(cpu);
+    riscv_cpu_init_ext_rules();
+    riscv_cpu_enable_ext_rules(cpu);
 
     riscv_cpu_validate_misa_priv(env, &local_err);
     if (local_err != NULL) {
@@ -1385,8 +1385,8 @@ static void riscv_tcg_cpu_instance_init(CPUState *cs)
         misa_ext_implied_rules = g_hash_table_new(NULL, g_direct_equal);
     }
 
-    if (!multi_ext_implied_rules) {
-        multi_ext_implied_rules = g_hash_table_new(NULL, g_direct_equal);
+    if (!multi_ext_enabling_rules) {
+        multi_ext_enabling_rules = g_hash_table_new(NULL, g_direct_equal);
     }
 
     riscv_cpu_add_user_properties(obj);
