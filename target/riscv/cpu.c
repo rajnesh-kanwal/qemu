@@ -2665,8 +2665,20 @@ RISCVCPUImpliedExtsRule *riscv_multi_ext_implied_rules[] = {
     NULL
 };
 
+static RISCVCPUPreferredExtsRule SSCCFG_PREFERRED = {
+    .ext = CPU_CFG_OFFSET(ext_ssccfg),
+    .preferred_multi_exts = {
+        CPU_CFG_OFFSET(ext_smcsrind), CPU_CFG_OFFSET(ext_sscsrind),
+        CPU_CFG_OFFSET(ext_ssaia), CPU_CFG_OFFSET(ext_smaia),
+        CPU_CFG_OFFSET(ext_smstateen), CPU_CFG_OFFSET(ext_sscofpmf),
+        CPU_CFG_OFFSET(ext_smcntrpmf), CPU_CFG_OFFSET(ext_smcdeleg),
+
+        RISCV_PREFRRED_EXTS_RULE_END
+    },
+};
+
 RISCVCPUPreferredExtsRule *riscv_multi_ext_preferred_rules[] = {
-    NULL
+    &SSCCFG_PREFERRED, NULL
 };
 
 static Property riscv_cpu_properties[] = {
