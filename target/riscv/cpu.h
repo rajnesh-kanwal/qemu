@@ -142,10 +142,27 @@ typedef struct riscv_cpu_implied_exts_rule {
     const uint32_t implied_multi_exts[];
 } RISCVCPUImpliedExtsRule;
 
+typedef struct riscv_cpu_preferred_exts_rule {
+#ifndef CONFIG_USER_ONLY
+    /*
+     * Bitmask indicates the rule enabled status for the harts.
+     * This enhancement is only available in system-mode QEMU,
+     * as we don't have a good way (e.g. mhartid) to distinguish
+     * the SMP cores in user-mode QEMU.
+     */
+    unsigned long *enabled;
+#endif
+    /* multi extension offset. */
+    const uint32_t ext;
+    const uint32_t preferred_multi_exts[];
+} RISCVCPUPreferredExtsRule;
+
 extern RISCVCPUImpliedExtsRule *riscv_misa_ext_implied_rules[];
 extern RISCVCPUImpliedExtsRule *riscv_multi_ext_implied_rules[];
+extern RISCVCPUPreferredExtsRule *riscv_multi_ext_preferred_rules[];
 
 #define RISCV_IMPLIED_EXTS_RULE_END -1
+#define RISCV_PREFRRED_EXTS_RULE_END RISCV_IMPLIED_EXTS_RULE_END
 
 #define MMU_USER_IDX 3
 

@@ -32,6 +32,7 @@
 #include "hw/core/accel-cpu.h"
 #include "hw/core/tcg-cpu-ops.h"
 #include "tcg/tcg.h"
+#include <stdio.h>
 #ifndef CONFIG_USER_ONLY
 #include "hw/boards.h"
 #endif
@@ -733,6 +734,7 @@ static void riscv_cpu_validate_profiles(RISCVCPU *cpu)
 static void riscv_cpu_init_ext_rules(void)
 {
     RISCVCPUImpliedExtsRule *rule;
+    RISCVCPUPreferredExtsRule *prule;
 #ifndef CONFIG_USER_ONLY
     MachineState *ms = MACHINE(qdev_get_machine());
 #endif
@@ -760,22 +762,40 @@ static void riscv_cpu_init_ext_rules(void)
                             GUINT_TO_POINTER(rule->ext), (gpointer)rule);
     }
 
+    for (i = 0; (prule = riscv_multi_ext_preferred_rules[i]); i++) {
+#ifndef CONFIG_USER_ONLY
+        prule->enabled = bitmap_new(ms->smp.cpus);
+#endif
+        g_hash_table_insert(multi_ext_enabling_rules,
+                            GUINT_TO_POINTER(prule->ext), (gpointer)prule);
+    }
+
     initialized = true;
 }
 
 static void cpu_enable_ext_rule(RISCVCPU *cpu,
-                                    RISCVCPUImpliedExtsRule *rule)
+                                RISCVCPUImpliedExtsRule *rule,
+                                RISCVCPUPreferredExtsRule *prule)
 {
     CPURISCVState *env = &cpu->env;
     RISCVCPUImpliedExtsRule *ir;
+    RISCVCPUPreferredExtsRule *pr;
     bool enabled = false;
     int i;
 
 #ifndef CONFIG_USER_ONLY
-    enabled = test_bit(cpu->env.mhartid, rule->enabled);
+    if (rule) {
+        enabled = test_bit(cpu->env.mhartid, rule->enabled);
+    } else if (prule) {
+        enabled = test_bit(cpu->env.mhartid, prule->enabled);
+    } else {
+        return;
+    }
 #endif
+    if (enabled)
+        return;
 
-    if (!enabled) {
+    if (rule) {
         /* Enable the implied MISAs. */
         if (rule->implied_misa_exts) {
             riscv_cpu_set_misa_ext(env,
@@ -787,7 +807,7 @@ static void cpu_enable_ext_rule(RISCVCPU *cpu,
                                              GUINT_TO_POINTER(misa_bits[i]));
 
                     if (ir) {
-                        cpu_enable_ext_rule(cpu, ir);
+                        cpu_enable_ext_rule(cpu, ir, NULL);
                     }
                 }
             }
@@ -803,12 +823,27 @@ static void cpu_enable_ext_rule(RISCVCPU *cpu,
                                             rule->implied_multi_exts[i]));
 
             if (ir) {
-                cpu_enable_ext_rule(cpu, ir);
+                cpu_enable_ext_rule(cpu, ir, NULL);
             }
         }
 
 #ifndef CONFIG_USER_ONLY
         bitmap_set(rule->enabled, cpu->env.mhartid, 1);
+#endif
+    } else if (prule) {
+        /* Enable the preferred extensions. */
+        for (i = 0;
+          prule->preferred_multi_exts[i] != RISCV_PREFRRED_EXTS_RULE_END; i++) {
+            cpu_cfg_ext_auto_update(cpu, prule->preferred_multi_exts[i], true);
+            pr = g_hash_table_lookup(multi_ext_enabling_rules,
+                                     GUINT_TO_POINTER(
+                                     prule->preferred_multi_exts[i]));
+            if (pr) {
+                cpu_enable_ext_rule(cpu, NULL, prule);
+            }
+        }
+#ifndef CONFIG_USER_ONLY
+        bitmap_set(prule->enabled, cpu->env.mhartid, 1);
 #endif
     }
 }
@@ -847,6 +882,7 @@ static void cpu_enable_zc_implied_rules(RISCVCPU *cpu)
 static void riscv_cpu_enable_ext_rules(RISCVCPU *cpu)
 {
     RISCVCPUImpliedExtsRule *rule;
+    RISCVCPUPreferredExtsRule *prule;
     int i;
 
     /* Enable the implied extensions for Zc. */
@@ -855,14 +891,21 @@ static void riscv_cpu_enable_ext_rules(RISCVCPU *cpu)
     /* Enable the implied MISAs. */
     for (i = 0; (rule = riscv_misa_ext_implied_rules[i]); i++) {
         if (riscv_has_ext(&cpu->env, rule->ext)) {
-            cpu_enable_ext_rule(cpu, rule);
+            cpu_enable_ext_rule(cpu, rule, NULL);
         }
     }
 
     /* Enable the implied extensions. */
     for (i = 0; (rule = riscv_multi_ext_implied_rules[i]); i++) {
         if (isa_ext_is_enabled(cpu, rule->ext)) {
-            cpu_enable_ext_rule(cpu, rule);
+            cpu_enable_ext_rule(cpu, rule, NULL);
+        }
+    }
+
+    /* Enable the preferred extensions. */
+    for (i = 0; (prule = riscv_multi_ext_preferred_rules[i]); i++) {
+        if (isa_ext_is_enabled(cpu, prule->ext)) {
+            cpu_enable_ext_rule(cpu, NULL, prule);
         }
     }
 }
