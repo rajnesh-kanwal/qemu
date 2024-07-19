@@ -494,6 +494,7 @@ static void rv64_base_cpu_init(Object *obj)
     env->priv_ver = PRIV_VERSION_LATEST;
 #ifndef CONFIG_USER_ONLY
     set_satp_mode_max_supported(RISCV_CPU(obj), VM_1_10_SV57);
+    cpu->cfg.ext_sscofpmf = true;
 #endif
 }
 
