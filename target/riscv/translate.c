@@ -569,6 +569,16 @@ static void gen_jal(DisasContext *ctx, int rd, target_ulong imm)
         }
     }
 
+#ifndef CONFIG_USER_ONLY
+    if (ctx->cfg_ptr->ext_smctr || ctx->cfg_ptr->ext_ssctr) {
+        TCGv dest = tcg_constant_tl(ctx->base.pc_next + imm);
+        TCGv src = tcg_constant_tl(ctx->base.pc_next);
+        TCGv tcg_rd = tcg_constant_tl((target_ulong)rd);
+
+        gen_helper_ctr_jal(tcg_env, src, dest, tcg_rd);
+    }
+#endif
+
     gen_pc_plus_diff(succ_pc, ctx, ctx->cur_insn_len);
     gen_set_gpr(ctx, rd, succ_pc);
 
